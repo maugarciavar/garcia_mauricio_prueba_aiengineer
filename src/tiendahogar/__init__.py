@@ -1,0 +1,1 @@
+"""TiendaHogar customer-support agent."""
