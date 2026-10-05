@@ -45,11 +45,29 @@ class Retriever:
         ranked = sorted(zip(self._documents, scores), key=lambda pair: pair[1], reverse=True)
         return [RetrievedDocument(document=doc, score=float(score)) for doc, score in ranked]
 
-    def search(self, query: str) -> list[RetrievedDocument]:
-        """The top-k documents scoring at least min_score; may be empty."""
+    def search(self, query: str, context: Sequence[str] = ()) -> list[RetrievedDocument]:
+        """The top-k documents scoring at least min_score; may be empty.
+
+        context: the customer's previous messages. A short follow-up such as
+        "¿Y de una licuadora?" does not say what it is about, so the query is
+        also searched together with that context and each document keeps its
+        best score. The best match for the query on its own is always kept, so
+        a change of topic is never crowded out by the earlier one.
+        """
         if not query.strip():
             return []
-        return [hit for hit in self.score_all(query)[: self.top_k] if hit.score >= self.min_score]
+        alone = self.score_all(query)
+        best = {hit.document.doc_id: hit for hit in alone}
+        if context:
+            for hit in self.score_all(" ".join([*context, query])):
+                if hit.score > best[hit.document.doc_id].score:
+                    best[hit.document.doc_id] = hit
+
+        ranked = sorted(best.values(), key=lambda hit: hit.score, reverse=True)[: self.top_k]
+        top_alone = best[alone[0].document.doc_id]
+        if top_alone not in ranked and top_alone.score >= self.min_score:
+            ranked[-1] = top_alone
+        return [hit for hit in ranked if hit.score >= self.min_score]
 
 
 def build_retriever() -> Retriever:

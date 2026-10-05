@@ -70,3 +70,36 @@ def test_results_are_capped_at_top_k_and_sorted_best_first(retriever):
 
 def test_score_all_covers_every_document(retriever):
     assert len(retriever.score_all("garantía")) == 5
+
+
+@pytest.mark.parametrize(
+    "previous, follow_up, expected_doc_id",
+    [
+        ("¿Cuánto dura la garantía de una lavadora?", "¿Y de una licuadora?", "doc1_garantia"),
+        ("¿Cuánto tarda en procesarse un reembolso?", "¿Y a dónde me llega el dinero?", "doc4_reembolsos"),
+        ("How long is the warranty on a fridge?", "And a toaster?", "doc1_garantia"),
+    ],
+)
+def test_follow_up_question_finds_the_policy_through_the_conversation_context(
+    retriever, previous, follow_up, expected_doc_id
+):
+    hits = retriever.search(follow_up, context=[previous])
+    assert hits[0].document.doc_id == expected_doc_id
+
+
+@pytest.mark.parametrize(
+    "new_topic_question",
+    ["¿Hacen envíos internacionales?", "Do you ship internationally?"],
+)
+def test_change_of_topic_is_not_crowded_out_by_the_earlier_one(retriever, new_topic_question):
+    earlier = [
+        "¿Cuánto tarda en procesarse un reembolso?",
+        "¿Puedo devolver un producto después de 30 días si tiene garantía?",
+    ]
+    hits = retriever.search(new_topic_question, context=earlier)
+    assert "doc3_envios" in [hit.document.doc_id for hit in hits]
+    assert len(hits) <= retriever.top_k
+
+
+def test_context_does_not_change_the_result_of_an_empty_query(retriever):
+    assert retriever.search("  ", context=["¿Cuánto dura la garantía?"]) == []

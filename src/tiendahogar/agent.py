@@ -36,6 +36,9 @@ ORDER_STATUS_TOOL = {
     "strict": True,
 }
 
+# Previous customer messages given to retrieval so follow-up questions keep their topic.
+_CONTEXT_MESSAGES = 2
+
 _TOOL_LOOP_FALLBACK = {
     "es": "No pude completar tu solicitud en este momento. Por favor, inténtalo de nuevo.",
     "en": "I couldn't complete your request right now. Please try again.",
@@ -78,7 +81,8 @@ class Agent:
         return response
 
     def _answer(self, message: str) -> AgentResponse:
-        retrieved = self._retriever.search(message)
+        previous = [turn["content"] for turn in self._history if turn["role"] == "user"]
+        retrieved = self._retriever.search(message, context=previous[-_CONTEXT_MESSAGES:])
         instructions = build_instructions(retrieved)
         items: list[Any] = [*self._history, {"role": "user", "content": message}]
         tool_calls: list[dict[str, Any]] = []

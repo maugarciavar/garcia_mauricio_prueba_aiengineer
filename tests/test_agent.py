@@ -39,8 +39,10 @@ class StubRetriever:
     def __init__(self, *doc_ids):
         by_id = {doc.doc_id: doc for doc in load_documents()}
         self._hits = [RetrievedDocument(document=by_id[doc_id], score=0.9) for doc_id in doc_ids]
+        self.calls = []
 
-    def search(self, query):
+    def search(self, query, context=()):
+        self.calls.append((query, list(context)))
         return list(self._hits)
 
 
@@ -166,6 +168,20 @@ def test_conversation_history_is_sent_on_the_next_turn():
         {"role": "user", "content": "¿Garantía de una lavadora?"},
         {"role": "assistant", "content": "Son 12 meses."},
         {"role": "user", "content": "¿Y de una licuadora?"},
+    ]
+
+
+def test_retrieval_receives_the_previous_customer_messages_as_context():
+    client = FakeClient(text_reply("uno"), text_reply("dos"), text_reply("tres"), text_reply("cuatro"))
+    retriever = StubRetriever("doc1_garantia")
+    agent = Agent(client, "test-model", retriever)
+    for message in ["primera", "segunda", "tercera", "cuarta"]:
+        agent.respond(message)
+    assert retriever.calls == [
+        ("primera", []),
+        ("segunda", ["primera"]),
+        ("tercera", ["primera", "segunda"]),
+        ("cuarta", ["segunda", "tercera"]),
     ]
 
 

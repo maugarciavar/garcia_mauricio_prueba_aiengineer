@@ -45,11 +45,14 @@ def make_agent(retriever):
 
 
 def check(scenario: Scenario, agent: Agent) -> None:
+    for earlier in scenario.previous:
+        agent.respond(earlier)
     response = agent.respond(scenario.message)
     reply = normalize(response.text)
     print(f"\n[{scenario.id}] route={response.route} guardrail={response.guardrail}")
     print(f"  retrieved={[(hit.document.doc_id, round(hit.score, 2)) for hit in response.retrieved]}")
     print(f"  tools={[call['arguments'] for call in response.tool_calls]}")
+    print(f"  earlier: {list(scenario.previous)}")
     print(f"  Q: {scenario.message}\n  A: {response.text}")
 
     for expected in scenario.all_of:

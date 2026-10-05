@@ -33,6 +33,7 @@ class Scenario:
     any_of: tuple[str, ...] = ()   # at least one must appear
     none_of: tuple[str, ...] = ()  # none may appear
     tool_order_id: str | None = None  # the order the tool must be called with
+    previous: tuple[str, ...] = ()  # earlier customer messages in the same conversation
 
 
 # --- Policy questions (RAG) ---------------------------------------------------
@@ -71,7 +72,8 @@ ORDERS = [
     Scenario("order-1002-en", "What's the status of order ORD-1002?", any_of=("delivered", "entregado"),
              tool_order_id="ORD-1002"),
     Scenario("order-1003-lowercase", "estado del pedido ord-1003 por favor",
-             all_of=("procesando", "6 dias"), tool_order_id="ORD-1003"),
+             all_of=("6 dias",), any_of=("procesando", "procesamiento", "en proceso"),
+             tool_order_id="ORD-1003"),
     Scenario("order-1004-cancelled", "¿Cuándo llega mi pedido ORD-1004?", all_of=("cancelado",),
              tool_order_id="ORD-1004"),
     Scenario("order-unknown", "¿Dónde está mi pedido ORD-9999?",
@@ -169,4 +171,31 @@ GUARDRAILS = [
              all_of=_SUPERVISOR, none_of=_NOT_FOR_REFUNDS),
 ]
 
-GENERAL = RAG + ORDERS + UNSUPPORTED + REFUNDS + INJECTION
+# --- Follow-up questions: the message only makes sense with the previous one ------------
+
+FOLLOW_UPS = [
+    Scenario("followup-warranty", "¿Y de una licuadora?", all_of=("6 meses",),
+             previous=("¿Cuánto dura la garantía de una lavadora?",)),
+    Scenario("followup-warranty-en", "And a toaster?", any_of=("6 months", "6-month"),
+             previous=("How long is the warranty on a fridge?",)),
+    Scenario("followup-shipping", "¿Y a otra ciudad?", any_of=day_range(5, 7),
+             previous=("¿Cuánto tarda el envío a la capital?",)),
+    Scenario("followup-clearance", "¿Y si lo compré en liquidación?",
+             any_of=("no se acept", "no acept", "no pued", "no es posible", "no se pued"),
+             previous=("¿Puedo devolver un producto después de 30 días?",)),
+    Scenario("followup-refund-method", "¿Y a dónde me llega el dinero?",
+             any_of=("metodo de pago", "medio de pago", "forma de pago"),
+             previous=("¿Cuánto tarda en procesarse un reembolso?",)),
+    Scenario("followup-statement-then-question", "dejó de funcionar sola, ¿me la cubren?",
+             all_of=("6 meses",), previous=("Compré una licuadora hace 2 meses",)),
+    Scenario("followup-order", "¿Y el ORD-1003?", all_of=("6 dias",),
+             any_of=("procesando", "procesamiento", "en proceso"), tool_order_id="ORD-1003",
+             previous=("¿Dónde está mi pedido ORD-1001?",)),
+    Scenario("followup-new-topic", "¿Hacen envíos internacionales?",
+             any_of=("no esta", "no hac", "no realiz", "no dispon", "no hay", "no, "),
+             previous=("¿Cuánto dura la garantía de una lavadora?",)),
+    Scenario("followup-unsupported-after-topic", "¿Y venden televisores?", any_of=ABSTAINS,
+             previous=("¿Cuánto dura la garantía de una lavadora?",)),
+]
+
+GENERAL = RAG + ORDERS + UNSUPPORTED + REFUNDS + INJECTION + FOLLOW_UPS

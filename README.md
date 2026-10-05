@@ -117,7 +117,7 @@ pytest
 
 `pytest tests/` es equivalente.
 
-Evaluación en vivo contra el modelo real (requiere `OPENAI_API_KEY`). Son 58 escenarios y unas 60 llamadas al modelo:
+Evaluación en vivo contra el modelo real (requiere `OPENAI_API_KEY`). Son 67 escenarios y unas 80 llamadas al modelo:
 
 ```bash
 pytest -m live
@@ -132,7 +132,8 @@ src/tiendahogar/
   policies/        los cinco documentos de política, sin modificar (.txt)
   documents.py     carga las políticas
   orders.py        tabla de pedidos y consultar_estado_pedido
-  retrieval.py     embeddings + similitud coseno, top-k y puntaje mínimo
+  retrieval.py     embeddings + similitud coseno, top-k y puntaje mínimo;
+                   usa los mensajes anteriores como contexto de búsqueda
   guardrails.py    guardrail en código: reembolsos mayores a $500 (regla aritmética)
   prompts.py       prompt de sistema: reglas de escalamiento (trato de empleados,
                    facturación, temas legales, reembolsos), fundamentación y contexto
