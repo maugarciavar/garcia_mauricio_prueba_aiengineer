@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Settings:
+    openai_model: str
+    max_tool_rounds: int
     embedding_model: str
     rag_top_k: int
     rag_min_score: float
@@ -13,6 +15,9 @@ class Settings:
 
 def load_settings() -> Settings:
     return Settings(
+        # OPENAI_API_KEY is read from the environment by the OpenAI SDK itself.
+        openai_model=os.getenv("OPENAI_MODEL", "gpt-6-luna"),
+        max_tool_rounds=int(os.getenv("MAX_TOOL_ROUNDS", "3")),
         embedding_model=os.getenv("EMBEDDING_MODEL", "jinaai/jina-embeddings-v2-base-es"),
         rag_top_k=int(os.getenv("RAG_TOP_K", "3")),
         # A noise floor chosen from observed scores, not a relevance guarantee:
