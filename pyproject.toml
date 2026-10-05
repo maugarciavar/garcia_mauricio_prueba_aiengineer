@@ -6,16 +6,17 @@ build-backend = "setuptools.build_meta"
 name = "tiendahogar-agent"
 version = "0.1.0"
 description = "Minimal customer-support agent for TiendaHogar: RAG, one order-status tool, deterministic guardrails."
-requires-python = ">=3.10"
+requires-python = ">=3.11"
+# Lower bounds are the versions this was developed and tested with.
 dependencies = [
-    "openai>=1.60",
-    "fastembed>=0.5",
-    "numpy>=1.26",
-    "python-dotenv>=1.0",
+    "openai>=3.24,<4",
+    "fastembed>=0.8.1,<0.9",
+    "numpy>=2.0,<3",
+    "python-dotenv>=1.0,<2",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0,<10"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,5 +1,6 @@
 import pytest
 
+from tiendahogar.config import SUPPORT_EMAIL
 from tiendahogar.guardrails import (
     REFUND_OVER_LIMIT,
     check_guardrails,
@@ -42,9 +43,11 @@ def test_refund_escalates_only_above_the_500_limit(message, expected):
     assert escalates(message) is expected
 
 
-def test_reply_says_a_human_supervisor_must_approve():
-    assert "supervisor humano" in check_guardrails("Quiero un reembolso de $900").reply
-    assert "human supervisor" in check_guardrails("I want a refund of $900").reply
+def test_reply_requires_a_human_supervisor_and_names_no_contact_channel():
+    spanish = check_guardrails("Quiero un reembolso de $900").reply
+    english = check_guardrails("I want a refund of $900").reply
+    assert "supervisor humano" in spanish and SUPPORT_EMAIL not in spanish
+    assert "human supervisor" in english and SUPPORT_EMAIL not in english
 
 
 @pytest.mark.parametrize(

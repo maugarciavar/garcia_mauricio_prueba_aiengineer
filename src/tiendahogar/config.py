@@ -3,6 +3,9 @@
 import os
 from dataclasses import dataclass
 
+# The human support channel named in the contact policy (Doc 5).
+SUPPORT_EMAIL = "soporte@tiendahogar.example"
+
 
 @dataclass(frozen=True)
 class Settings:

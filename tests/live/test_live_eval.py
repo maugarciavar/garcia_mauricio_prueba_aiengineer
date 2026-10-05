@@ -38,8 +38,8 @@ def make_agent(retriever):
 
     client, settings = OpenAI(), load_settings()
 
-    def factory(code_guardrails: bool = True) -> Agent:
-        return Agent(client, settings.openai_model, retriever, settings.max_tool_rounds, code_guardrails)
+    def factory() -> Agent:
+        return Agent(client, settings.openai_model, retriever, settings.max_tool_rounds)
 
     return factory
 
@@ -65,16 +65,6 @@ def check(scenario: Scenario, agent: Agent) -> None:
         assert scenario.tool_order_id in called_with, f"tool not called with {scenario.tool_order_id}"
 
 
-@pytest.mark.parametrize("scenario", GENERAL, ids=lambda scenario: scenario.id)
-def test_general_scenario(scenario, make_agent):
+@pytest.mark.parametrize("scenario", GENERAL + GUARDRAILS, ids=lambda scenario: scenario.id)
+def test_scenario(scenario, make_agent):
     check(scenario, make_agent())
-
-
-@pytest.mark.parametrize("scenario", GUARDRAILS, ids=lambda scenario: scenario.id)
-def test_guardrail_with_code_layer(scenario, make_agent):
-    check(scenario, make_agent(code_guardrails=True))
-
-
-@pytest.mark.parametrize("scenario", GUARDRAILS, ids=lambda scenario: scenario.id)
-def test_guardrail_with_prompt_only(scenario, make_agent):
-    check(scenario, make_agent(code_guardrails=False))

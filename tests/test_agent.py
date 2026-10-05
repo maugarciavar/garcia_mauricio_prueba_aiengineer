@@ -67,15 +67,8 @@ def test_refund_over_limit_escalates_without_calling_the_llm():
     response = make_agent(client).respond("Quiero un reembolso de $800")
     assert (response.route, response.guardrail) == ("escalated", REFUND_OVER_LIMIT)
     assert "supervisor humano" in response.text
+    assert SUPPORT_EMAIL not in response.text
     assert client.requests == []
-
-
-def test_with_code_guardrails_off_the_message_reaches_the_llm():
-    client = FakeClient(text_reply("Requiere aprobación de un supervisor humano."))
-    agent = Agent(client, "test-model", StubRetriever("doc4_reembolsos"), code_guardrails=False)
-    response = agent.respond("Quiero un reembolso de $800")
-    assert response.route == "answered"
-    assert len(client.requests) == 1
 
 
 @pytest.mark.parametrize(

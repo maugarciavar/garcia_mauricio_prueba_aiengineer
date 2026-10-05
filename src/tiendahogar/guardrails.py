@@ -102,6 +102,8 @@ def _largest_amount(normalized: str) -> float | None:
 
 
 # --- Reply --------------------------------------------------------------------
+# Doc 4 requires a human supervisor for these refunds but names no contact channel,
+# and Doc 5 assigns the support email to other cases only, so the reply gives none.
 
 _SPANISH_WORDS = frozenset(
     "el la los las de del que mi un una es por para con quiero como cuanto se lo y en al fue "
