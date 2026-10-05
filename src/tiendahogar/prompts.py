@@ -2,9 +2,9 @@
 
 from typing import Sequence
 
-from tiendahogar.guardrails import SUPPORT_EMAIL
 from tiendahogar.retrieval import RetrievedDocument
 
+SUPPORT_EMAIL = "soporte@tiendahogar.example"
 NO_POLICY_MARKER = "(No policy excerpt matched this message.)"
 
 SYSTEM_PROMPT = f"""\

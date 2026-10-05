@@ -8,8 +8,8 @@ import pytest
 
 from tiendahogar.agent import ORDER_STATUS_TOOL, Agent
 from tiendahogar.documents import load_documents
-from tiendahogar.guardrails import REFUND_OVER_LIMIT, SUPPORT_EMAIL
-from tiendahogar.prompts import NO_POLICY_MARKER
+from tiendahogar.guardrails import REFUND_OVER_LIMIT
+from tiendahogar.prompts import NO_POLICY_MARKER, SUPPORT_EMAIL, SYSTEM_PROMPT
 from tiendahogar.retrieval import RetrievedDocument
 
 
@@ -62,23 +62,38 @@ def test_tool_schema_exposes_exactly_the_specified_function():
     assert ORDER_STATUS_TOOL["parameters"]["properties"]["order_id"]["type"] == "string"
 
 
-@pytest.mark.parametrize(
-    "message",
-    ["Voy a demandar a la tienda", "El vendedor me gritó", "Me cobraron dos veces"],
-)
-def test_guardrail_escalates_without_calling_the_llm(message):
-    client = FakeClient()
-    response = make_agent(client, "doc1_garantia").respond(message)
-    assert response.route == "escalated"
-    assert SUPPORT_EMAIL in response.text
-    assert client.requests == []
-
-
 def test_refund_over_limit_escalates_without_calling_the_llm():
     client = FakeClient()
     response = make_agent(client).respond("Quiero un reembolso de $800")
     assert (response.route, response.guardrail) == ("escalated", REFUND_OVER_LIMIT)
+    assert "supervisor humano" in response.text
     assert client.requests == []
+
+
+def test_with_code_guardrails_off_the_message_reaches_the_llm():
+    client = FakeClient(text_reply("Requiere aprobación de un supervisor humano."))
+    agent = Agent(client, "test-model", StubRetriever("doc4_reembolsos"), code_guardrails=False)
+    response = agent.respond("Quiero un reembolso de $800")
+    assert response.route == "answered"
+    assert len(client.requests) == 1
+
+
+@pytest.mark.parametrize(
+    "message",
+    ["Voy a demandar a la tienda", "El vendedor me gritó", "Me cobraron dos veces"],
+)
+def test_cases_recognised_by_meaning_are_sent_to_the_llm_with_the_escalation_rules(message):
+    client = FakeClient(text_reply(f"Escribe a {SUPPORT_EMAIL}."))
+    response = make_agent(client, "doc5_contacto").respond(message)
+    assert response.route == "answered"
+    instructions = client.requests[0]["instructions"]
+    assert SUPPORT_EMAIL in instructions
+    assert "Cases you must not handle" in instructions
+
+
+def test_system_prompt_states_every_escalation_rule():
+    for rule in ("employee", "billing disputes", "legal topic", "over $500", SUPPORT_EMAIL):
+        assert rule in SYSTEM_PROMPT
 
 
 def test_policy_question_sends_the_retrieved_policy_to_the_llm():

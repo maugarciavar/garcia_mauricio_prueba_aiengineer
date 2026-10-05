@@ -54,16 +54,28 @@ class AgentResponse:
 class Agent:
     """One instance holds one conversation."""
 
-    def __init__(self, client: Any, model: str, retriever: Retriever, max_tool_rounds: int = 3):
+    def __init__(
+        self,
+        client: Any,
+        model: str,
+        retriever: Retriever,
+        max_tool_rounds: int = 3,
+        code_guardrails: bool = True,
+    ):
         self._client = client
         self._model = model
         self._retriever = retriever
         self._max_tool_rounds = max_tool_rounds
+        # False sends every message to the model, leaving escalation to the
+        # system prompt alone. Used by the live evaluation to measure that layer.
+        self._code_guardrails = code_guardrails
         self._history: list[dict[str, str]] = []
         self._awaiting_refund_amount = False
 
     def respond(self, message: str) -> AgentResponse:
-        escalation = check_guardrails(message, self._awaiting_refund_amount)
+        escalation = None
+        if self._code_guardrails:
+            escalation = check_guardrails(message, self._awaiting_refund_amount)
         if escalation is not None:
             self._awaiting_refund_amount = False
             response = AgentResponse(
